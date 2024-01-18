@@ -10,8 +10,14 @@
     "postinstall": "nuxt prepare"
   },
   "devDependencies": {
+    "@vueuse/core": "^10.7.2",
+    "@vueuse/nuxt": "^10.7.2",
     "nuxt": "^3.9.3",
+    "nuxt-windicss": "^2.6.1",
     "vue": "^3.4.14",
     "vue-router": "^4.2.5"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1"
   }
 }
