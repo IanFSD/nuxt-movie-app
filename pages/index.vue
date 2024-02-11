@@ -7,67 +7,72 @@
             <input v-model="searchTerm" @input="handleSearch" placeholder="Search" type="text" class="px-2 py-1 border border-gray-800 rounded-md min-w-64 text-gray-500">
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 self-center gap-x-10 gap-y-10 mb-10">
-            <MovieCard :movie="movie" v-for="movie in data?.results" :key="movie.id"/>
+            <MovieCard :movie="movie" v-for="movie in movies" :key="movie"/>
         </div>
-        <div v-if="data?.results.length" class="flex justify-center">
+        <div v-if="movies?.length" class="flex justify-center">
             <button v-if="!disabledPrevious" @click="page--" class="px-4 py-2 text-m border rounded-lg">Previous</button>
             <div class="px-4 py-2 text-m border rounded-lg">{{ page }}</div>
             <button v-if="!disabledNext" @click="page++" class="px-4 py-2 text-m border rounded-lg">Next</button>
         </div>
-    </div> 
+    </div>  
 </template>
     
-<script setup lang="ts">
-import { ApiResponse } from '~~/types/ApiResponse';
-let data:any;
-// Implement the fetch method
-const fetch = async () => {
-  // Use await to wait for the data to be fetched
-  const result = await useFetch<ApiResponse>(url);
-  // Assign the fetched data to the variable
-  data = result.data;
+<script>
+import MovieCard from '@/components/MovieCard.vue'; // Adjust the path based on your project structure
+
+export default {
+  components: {
+    MovieCard,
+  },
+  data() {
+    return {
+     url: process.env.NUXT_API_BASE_URL || "http://localhost:5000",
+      searchTerm: '',
+      movies: [],
+      page: 1,
+      disabledPrevious: false,
+      disabledNext: false,
+    };
+  },
+  async created() {
+    await this.fetchTrendingMovies(); // Initial API request when the component is created
+  },
+  methods: {
+    async fetchTrendingMovies() {
+      try {
+        // Make your API request here using the searchTerm and page variables
+        const response = await $fetch(`${this.url}/movies/trending/week`, {
+        method: 'GET'
+    });
+        // Update the data property with the API response
+        this.movies = response;
+        // Update disabledPrevious and disabledNext based on your API response
+        //this.disabledPrevious = response.data.page <= 1;
+       // this.disabledNext = response.data.page >= response.data.total_pages;
+      } catch (error) {
+        console.error('Error fetching trending  movies:', error);
+      }
+    },  
+    async fetchMovies() {
+      try {
+        // Make your API request here using the searchTerm and page variables
+        const response = await useFetch(
+          `/movies/search?query=${this.searchTerm}&page=${this.page}`
+        );
+        // Update the data property with the API response
+        this.movies = response;
+
+        // Update disabledPrevious and disabledNext based on your API response
+        this.disabledPrevious = response.data.page <= 1;
+        this.disabledNext = response.data.page >= response.data.total_pages;
+      } catch (error) {
+        console.error('Error fetching movies:', error);
+      }
+    },
+    handleSearch() {
+      this.page = 1; // Reset page to 1 when a new search term is entered
+      this.fetchMovies();
+    },
+  },
 };
-const fetchInitialData = async () => {
-  // Use await to wait for the data to be fetched
-  const result = useFetch<ApiResponse>(`/api/search/movies`);
-  // Assign the fetched data to the variable
-  data = result.data;
-};
-// Handle search input changes
-const handleSearch = () => {
-  // Reset page to 1 when the search term changes
-  page.value = 1;
-   // Check if searchTerm is empty
-   if (searchTerm.value.trim() === '') {
-    // If empty, call fetchInitialData
-    fetchInitialData();
-  } else {
-    // If not empty, call fetchData
-    fetch();
-  }
-};
-
-
-
-const searchTerm = ref('');
-const page = ref(1);
-// Disable pagination depending on first or last page
-const disabledPrevious = computed(() => {
-    return page.value === 1;
-})
-const disabledNext = computed(() => {
-    return page.value + 1 === data.value?.total_pages;
-})
-
-// Create a debounced version of searchTerm
-const debouncedSearchTerm = refDebounced(searchTerm, 700);
-
-// replace the url with the debounced version
-const url = computed(() => {
-    return `api/movies/search?query=${debouncedSearchTerm.value}&page=${page.value}`;
-});
-
-data = useFetch<ApiResponse>(url).data;
-// Trigger the initial data fetch
-fetchInitialData();
 </script>
